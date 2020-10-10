@@ -27,9 +27,6 @@ public class CommandLineExecutive {
         Options options = new Options();
 
         {
-
-            //TODO: still need a way to do excludes, regex or something.  joda has an example package I want to ignore
-
             Option help = new Option("h", "help", false, "print this message");
             Option version = new Option("v", "version", false, "print the version information and exit");
             Option excludetests = new Option("xt", "excludetests", false, "exclude test files from scanning");

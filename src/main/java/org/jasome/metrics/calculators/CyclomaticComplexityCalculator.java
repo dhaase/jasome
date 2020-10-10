@@ -19,17 +19,17 @@ import static com.github.javaparser.ast.expr.BinaryExpr.Operator.OR;
 public class CyclomaticComplexityCalculator implements Calculator<Method> {
     @Override
     public Set<Metric> calculate(Method method) {
-        List<IfStmt> ifStmts = method.getSource().getNodesByType(IfStmt.class);
-        List<ForStmt> forStmts = method.getSource().getNodesByType(ForStmt.class);
-        List<WhileStmt> whileStmts = method.getSource().getNodesByType(WhileStmt.class);
-        List<DoStmt> doStmts = method.getSource().getNodesByType(DoStmt.class);
-        List<SwitchEntryStmt> catchStmts = method.getSource().getNodesByType(SwitchEntryStmt.class).stream().
+        List<IfStmt> ifStmts = method.getSource().findAll(IfStmt.class);
+        List<ForStmt> forStmts = method.getSource().findAll(ForStmt.class);
+        List<WhileStmt> whileStmts = method.getSource().findAll(WhileStmt.class);
+        List<DoStmt> doStmts = method.getSource().findAll(DoStmt.class);
+        List<SwitchEntryStmt> catchStmts = method.getSource().findAll(SwitchEntryStmt.class).stream().
                 filter(s -> s.getLabel().isPresent()) //Don't include "default" statements, only labeled case statements
                 .collect(Collectors.toList());
-        List<ConditionalExpr> ternaryExprs = method.getSource().getNodesByType(ConditionalExpr.class);
-        List<BinaryExpr> andExprs = method.getSource().getNodesByType(BinaryExpr.class).stream().
+        List<ConditionalExpr> ternaryExprs = method.getSource().findAll(ConditionalExpr.class);
+        List<BinaryExpr> andExprs = method.getSource().findAll(BinaryExpr.class).stream().
                 filter(f -> f.getOperator() == AND).collect(Collectors.toList());
-        List<BinaryExpr> orExprs = method.getSource().getNodesByType(BinaryExpr.class).stream().
+        List<BinaryExpr> orExprs = method.getSource().findAll(BinaryExpr.class).stream().
                 filter(f -> f.getOperator() == OR).collect(Collectors.toList());
 
         NumericValue total = NumericValue.of(ifStmts.size() +
@@ -42,6 +42,6 @@ public class CyclomaticComplexityCalculator implements Calculator<Method> {
                 orExprs.size() +
                 1); //There's always at least 1 path through the method
 
-        return ImmutableSet.of(Metric.of("VG", "McCabe Cyclomatic Complexity", total));
+        return ImmutableSet.of(Metric.of("VG", "McCabe Cyclomatic Complexity (VG) - The number of unique possible paths through code (method)", total));
     }
 }

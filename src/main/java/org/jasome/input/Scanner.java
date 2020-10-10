@@ -20,10 +20,75 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
-public abstract class Scanner<T> {
+public abstract class Scanner {
     private static final Logger logger = LoggerFactory.getLogger(Scanner.class);
+
+    private JavaSymbolSolver configureParserAndResolver(Collection<Pair<String, Map<String, String>>> sourceCode, String projectPath) {
+        Set<File> sourceDirs = new HashSet<>();
+
+        for (Pair<String, Map<String, String>> sourceFile : sourceCode) {
+            String sourceCodeContent = sourceFile.getLeft();
+            Map<String, String> attributes = sourceFile.getRight();
+
+            try {
+                CompilationUnit cu = JavaParser.parse(sourceCodeContent);
+
+                String sourceFileName = attributes.get("sourceFile");
+
+                Optional<String> packageName = cu.getPackageDeclaration().map((p) -> p.getName().asString());
+
+                if (packageName.isPresent()) {
+                    String packagePrefix = packageName.get().replace(".", File.separator) + "/";
+                    String sourceDir = FilenameUtils.getPath(sourceFileName);
+                    String baseSourceDir = sourceDir.replace(packagePrefix, "");
+                    String finalSourceBaseDir = baseSourceDir.replace(".", projectPath);
+                    sourceDirs.add(new File(finalSourceBaseDir));
+                } else {
+                    sourceDirs.add(new File(FilenameUtils.getPath(sourceFileName)));
+                }
+
+            } catch (ParseProblemException e) {
+                String file = attributes.get("sourceFile");
+                logger.warn("Unable to parse code from file %s, ignoring\n", file);
+                logger.warn(e.getProblems().toString());
+            }
+        }
+
+
+        TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
+
+        CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
+        combinedTypeSolver.add(reflectionTypeSolver);
+
+        for (File sourceDir : sourceDirs) {
+            try {
+                combinedTypeSolver.add(new JavaParserTypeSolver(sourceDir));
+            } catch (IllegalStateException e) {
+                logger.warn("Unable to parse code from dir %s, ignoring\n", sourceDir);
+                StringWriter sw = new StringWriter();
+                e.printStackTrace(new PrintWriter(sw));
+                logger.warn(sw.toString());
+            }
+        }
+
+        JavaSymbolSolver symbolSolver = new JavaSymbolSolver(combinedTypeSolver);
+
+
+        ParserConfiguration parserConfiguration = new ParserConfiguration()
+                .setAttributeComments(false)
+                .setSymbolResolver(symbolSolver);
+        JavaParser.setStaticConfiguration(parserConfiguration);
+        return symbolSolver;
+    }
 
     protected Project doScan(Collection<Pair<String, Map<String, String>>> sourceCode, String projectPath) {
 
@@ -90,63 +155,7 @@ public abstract class Scanner<T> {
 
     }
 
-    private JavaSymbolSolver configureParserAndResolver(Collection<Pair<String, Map<String, String>>> sourceCode, String projectPath) {
-        Set<File> sourceDirs = new HashSet<>();
-
-        for (Pair<String, Map<String, String>> sourceFile : sourceCode) {
-            String sourceCodeContent = sourceFile.getLeft();
-            Map<String, String> attributes = sourceFile.getRight();
-
-            try {
-                CompilationUnit cu = JavaParser.parse(sourceCodeContent);
-
-                String sourceFileName = attributes.get("sourceFile");
-
-                Optional<String> packageName = cu.getPackageDeclaration().map((p) -> p.getName().asString());
-
-                if (packageName.isPresent()) {
-                    String packagePrefix = packageName.get().replaceAll("[.]", File.separator) + "/";
-                    String sourceDir = FilenameUtils.getPath(sourceFileName);
-                    String baseSourceDir = sourceDir.replace(packagePrefix, "");
-                    String finalSourceBaseDir = baseSourceDir.replace(".", projectPath);
-                    sourceDirs.add(new File(finalSourceBaseDir));
-                } else {
-                    sourceDirs.add(new File(FilenameUtils.getPath(sourceFileName)));
-                }
-
-            } catch (ParseProblemException e) {
-                String file = attributes.get("sourceFile");
-                logger.warn("Unable to parse code from file %s, ignoring\n", file);
-                logger.warn(e.getProblems().toString());
-            }
-        }
-
-
-        TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
-
-        CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
-        combinedTypeSolver.add(reflectionTypeSolver);
-
-        for (File sourceDir : sourceDirs) {
-            try {
-                combinedTypeSolver.add(new JavaParserTypeSolver(sourceDir));
-            } catch (IllegalStateException e) {
-                logger.warn("Unable to parse code from dir %s, ignoring\n", sourceDir);
-                StringWriter sw = new StringWriter();
-                e.printStackTrace(new PrintWriter(sw));
-                logger.warn(sw.toString());
-            }
-        }
-
-        JavaSymbolSolver symbolSolver = new JavaSymbolSolver(combinedTypeSolver);
-
-
-        ParserConfiguration parserConfiguration = new ParserConfiguration()
-                .setAttributeComments(false)
-                .setSymbolResolver(symbolSolver);
-        JavaParser.setStaticConfiguration(parserConfiguration);
-        return symbolSolver;
-    }
+    public abstract Project scan();
 
 
     private Map<String, List<Pair<ClassOrInterfaceDeclaration, Map<String, String>>>> gatherPackages(Collection<Pair<String, Map<String, String>>> sourcesAndAttributes) {

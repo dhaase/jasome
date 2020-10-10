@@ -8,7 +8,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 
-//TODO: try to figure out a way to move this to org.jasome.metrics - it needs to access a package-level method on Code which prevents this
 public class Processor {
     private Set<Calculator<Project>> projectCalculators;
     private Set<Calculator<Package>> packageCalculators;

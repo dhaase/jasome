@@ -35,7 +35,7 @@ public class RobertMartinCouplingCalculator implements Calculator<Package> {
         NumericValue efferentCoupling = NumericValue.ZERO; //The number of classes inside a package that depend on classes outside the package.
 
         for (Type typeInsidePackage : aPackage.getTypes()) {
-            List<ClassOrInterfaceType> referencedTypes = typeInsidePackage.getSource().getNodesByType(ClassOrInterfaceType.class);
+            List<ClassOrInterfaceType> referencedTypes = typeInsidePackage.getSource().findAll(ClassOrInterfaceType.class);
 
             long numberOfTypesReferencedThatAreInsideAnotherPackage = referencedTypes
                     .parallelStream()
@@ -45,7 +45,7 @@ public class RobertMartinCouplingCalculator implements Calculator<Package> {
                     ).count();
 
             //TODO: this should be more restrictive, we only need these inside of certain kinds of expressions
-            List<SimpleName> referencedNames = typeInsidePackage.getSource().getNodesByType(SimpleName.class);
+            List<SimpleName> referencedNames = typeInsidePackage.getSource().findAll(SimpleName.class);
 
             long numberOfSimpleNamesReferencedThatCorrespondToTypesInsideAnotherPackage = referencedNames
                     .parallelStream()
@@ -61,7 +61,7 @@ public class RobertMartinCouplingCalculator implements Calculator<Package> {
 
         for (List<Type> typesOutsidePackage : allClassesOutsideOfPackage.values()) {
             for (Type typeOutsidePackage : typesOutsidePackage) {
-                List<ClassOrInterfaceType> referencedTypes = typeOutsidePackage.getSource().getNodesByType(ClassOrInterfaceType.class);
+                List<ClassOrInterfaceType> referencedTypes = typeOutsidePackage.getSource().findAll(ClassOrInterfaceType.class);
 
                 long numberOfTypesReferencedThatAreInsideThisPackage = referencedTypes
                         .parallelStream()
@@ -70,7 +70,7 @@ public class RobertMartinCouplingCalculator implements Calculator<Package> {
                                 allClassesInsideOfPackage.containsKey(typeName) && !allClassesOutsideOfPackage.containsKey(typeName)
                         ).count();
 
-                List<SimpleName> referencedNames = typeOutsidePackage.getSource().getNodesByType(SimpleName.class);
+                List<SimpleName> referencedNames = typeOutsidePackage.getSource().findAll(SimpleName.class);
 
                 long numberOfSimpleNamesReferencedThatCorrespondToTypesInsideThisPackage = referencedNames
                         .parallelStream()
@@ -86,8 +86,8 @@ public class RobertMartinCouplingCalculator implements Calculator<Package> {
         }
 
         ImmutableSet.Builder<Metric> metrics = ImmutableSet.<Metric>builder()
-                .add(Metric.of("Ca", "Afferent Coupling", afferentCoupling))
-                .add(Metric.of("Ce", "Efferent Coupling", efferentCoupling));
+                .add(Metric.of("Ca", "Afferent Coupling (Ca) - Number of classes outside a package that depend on it (package)", afferentCoupling))
+                .add(Metric.of("Ce", "Efferent Coupling (Ce) - Number of classes inside a package that depend on classes outside of it (package)", efferentCoupling));
 
         Optional<NumericValue> instabilityOpt = Optional.ofNullable(
                 afferentCoupling.plus(efferentCoupling).isGreaterThan(NumericValue.ZERO) ?
@@ -95,7 +95,7 @@ public class RobertMartinCouplingCalculator implements Calculator<Package> {
                         : null
         );
 
-        instabilityOpt.ifPresent(i -> metrics.add(Metric.of("I", "Instability", i)));
+        instabilityOpt.ifPresent(i -> metrics.add(Metric.of("I", "Instability (I) - Effectively the riskiness of a package, how often it has a reason to change, Ce/(Ce+Ca) (package)", i)));
 
         NumericValue numberOfAbstractClassesAndInterfacesInPackage = NumericValue.of(
                 aPackage.getTypes()
@@ -104,7 +104,7 @@ public class RobertMartinCouplingCalculator implements Calculator<Package> {
                         .count()
         );
 
-        metrics.add(Metric.of("NOI", "Number of Interfaces and Abstract Classes", numberOfAbstractClassesAndInterfacesInPackage));
+        metrics.add(Metric.of("NOI", "Number of Interfaces (NOI) - The number of abstract classes (and interfaces) in a package (package)", numberOfAbstractClassesAndInterfacesInPackage));
 
         Optional<NumericValue> abstractnessOpt = Optional.ofNullable(
                 aPackage.getTypes().size() > 0 ?
@@ -113,11 +113,11 @@ public class RobertMartinCouplingCalculator implements Calculator<Package> {
         );
 
 
-        abstractnessOpt.ifPresent(a -> metrics.add(Metric.of("A", "Abstractness", a)));
+        abstractnessOpt.ifPresent(a -> metrics.add(Metric.of("A", "Abstractness (A) - The number of abstract classes (and interfaces) divided by the total number of types in a package, NOI / NOC (package)", a)));
 
 
         if (instabilityOpt.isPresent() && abstractnessOpt.isPresent()) {
-            metrics.add(Metric.of("DMS", "Normalized Distance from Main Sequence", abstractnessOpt.get().plus(instabilityOpt.get()).minus(NumericValue.ONE).abs()));
+            metrics.add(Metric.of("DMS", "Normalized Distance from Main Sequence (DMS) - Robert Martin's metric for a packages distance from ideal, | A + I - 1 | (package)", abstractnessOpt.get().plus(instabilityOpt.get()).minus(NumericValue.ONE).abs()));
         }
 
         return metrics.build();

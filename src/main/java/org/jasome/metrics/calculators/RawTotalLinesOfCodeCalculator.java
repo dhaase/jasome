@@ -32,6 +32,8 @@ public class RawTotalLinesOfCodeCalculator implements Calculator<Type> {
         if (!begin.isPresent()) return ImmutableSet.of();
         if (!end.isPresent()) return ImmutableSet.of();
         
-        return ImmutableSet.of(Metric.of("RTLOC", "Raw Total Lines of Code", end.get().line - begin.get().line + 1));
+        return ImmutableSet.of(Metric.of("RTLOC", "Raw Total Lines of Code (RTLOC) - " +
+                "The actual number of lines of code in a class, using the line numbers of the file itself. " +
+                "Comments, whitespace, and everything else is counted. (class)", end.get().line - begin.get().line + 1));
     }
 }

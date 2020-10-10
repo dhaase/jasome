@@ -40,12 +40,12 @@ public class NumberOfFieldsCalculator implements Calculator<Type> {
         long numPublicMethods = declaration.getMethods().stream().filter(f -> f.getModifiers().contains(Modifier.PUBLIC)).count();
 
         return ImmutableSet.<Metric>builder()
-                .add(Metric.of("NF", "Number of Attributes", numAttributes))
-                .add(Metric.of("NSF", "Number of Static Attributes", numStaticAttributes))
-                .add(Metric.of("NPF", "Number of Public Attributes", numPublicAttributes))
-                .add(Metric.of("NM", "Number of Methods", numMethods))
-                .add(Metric.of("NSM", "Number of Static Methods", numStaticMethods))
-                .add(Metric.of("NPM", "Number of Public Methods", numPublicMethods))
+                .add(Metric.of("NF", "Number of Fields (NF) - The number of fields/attributes (class)", numAttributes))
+                .add(Metric.of("NSF", "Number of Static Fields (NSF) - The number of static attributes (class)", numStaticAttributes))
+                .add(Metric.of("NPF", "Number of Public Fields (NPF) - The number of public attributes (class)", numPublicAttributes))
+                .add(Metric.of("NM", "Number of Methods (NM) - The number of methods (class)", numMethods))
+                .add(Metric.of("NSM", "Number of Static Methods (NSM) - The number of static methods (class)", numStaticMethods))
+                .add(Metric.of("NPM", "Number of Public Methods (NPM) - The number of public methods (class)", numPublicMethods))
                 .build();
     }
 }

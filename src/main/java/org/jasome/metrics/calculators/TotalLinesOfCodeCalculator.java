@@ -2,11 +2,40 @@ package org.jasome.metrics.calculators;
 
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
-import com.github.javaparser.ast.body.*;
+import com.github.javaparser.ast.body.AnnotationDeclaration;
+import com.github.javaparser.ast.body.AnnotationMemberDeclaration;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.ConstructorDeclaration;
+import com.github.javaparser.ast.body.EnumConstantDeclaration;
+import com.github.javaparser.ast.body.EnumDeclaration;
+import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.body.InitializerDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
-import com.github.javaparser.ast.stmt.*;
+import com.github.javaparser.ast.stmt.AssertStmt;
+import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.BreakStmt;
+import com.github.javaparser.ast.stmt.CatchClause;
+import com.github.javaparser.ast.stmt.ContinueStmt;
+import com.github.javaparser.ast.stmt.DoStmt;
+import com.github.javaparser.ast.stmt.EmptyStmt;
+import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt;
+import com.github.javaparser.ast.stmt.ExpressionStmt;
+import com.github.javaparser.ast.stmt.ForStmt;
+import com.github.javaparser.ast.stmt.ForeachStmt;
+import com.github.javaparser.ast.stmt.IfStmt;
+import com.github.javaparser.ast.stmt.LabeledStmt;
+import com.github.javaparser.ast.stmt.LocalClassDeclarationStmt;
+import com.github.javaparser.ast.stmt.ReturnStmt;
+import com.github.javaparser.ast.stmt.Statement;
+import com.github.javaparser.ast.stmt.SwitchEntryStmt;
+import com.github.javaparser.ast.stmt.SwitchStmt;
+import com.github.javaparser.ast.stmt.SynchronizedStmt;
+import com.github.javaparser.ast.stmt.ThrowStmt;
+import com.github.javaparser.ast.stmt.TryStmt;
+import com.github.javaparser.ast.stmt.WhileStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.TypeParameter;
 import com.google.common.collect.ImmutableSet;
@@ -24,7 +53,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
 
-//TODO: auto formatting fucked up this code, reformat
 
 /**
  * Counts the number of lines of code in a file.  Attempts to normalize for
@@ -90,38 +118,6 @@ public class TotalLinesOfCodeCalculator {
 
     private static final Logger logger = LoggerFactory.getLogger(TotalLinesOfCodeCalculator.class);
 
-    public static class ProjectCalculator implements Calculator<Project> {
-
-        @Override
-        public Set<Metric> calculate(Project aProject) {
-            NumericValue total = aProject.getPackages().stream().map(m -> m.getMetric("TLOC").get().getValue()).reduce(NumericValue.ZERO, NumericValue::plus);
-
-            return ImmutableSet.of(Metric.of("TLOC", "Total Lines of Code", total));
-        }
-    }
-
-    public static class PackageCalculator implements Calculator<Package> {
-
-        @Override
-        public Set<Metric> calculate(Package aPackage) {
-            NumericValue total = aPackage.getTypes().stream().map(m -> m.getMetric("TLOC").get().getValue()).reduce(NumericValue.ZERO, NumericValue::plus);
-
-            return ImmutableSet.of(Metric.of("TLOC", "Total Lines of Code", total));
-        }
-    }
-
-    public static class TypeCalculator implements Calculator<Type> {
-
-        @Override
-        public Set<Metric> calculate(Type type) {
-            Stack<Node> nodeStack = new Stack<Node>();
-            nodeStack.add(type.getSource());
-
-            NumericValue total = performCalculation(nodeStack);
-            return ImmutableSet.of(Metric.of("TLOC", "Total Lines of Code", total));
-        }
-    }
-
     public static class MethodCalculator implements Calculator<Method> {
 
         @Override
@@ -130,7 +126,52 @@ public class TotalLinesOfCodeCalculator {
             nodeStack.add(method.getSource());
 
             NumericValue total = performCalculation(nodeStack);
-            return ImmutableSet.of(Metric.of("TLOC", "Total Lines of Code", total));
+            return ImmutableSet.of(Metric.of("TLOC", "Total Lines of Code (TLOC) - The total number of lines of code, ignoring comments, whitespace, and formatting differences (method)", total));
+        }
+    }
+
+    public static class PackageCalculator implements Calculator<Package> {
+
+        static NumericValue doCalculate(Package aPackage) {
+            NumericValue total = NumericValue.ZERO;
+            for (Type type : aPackage.getTypes()) {
+                total = TypeCalculator.doCalculate(type).plus(total);
+            }
+            return total;
+        }
+
+        @Override
+        public Set<Metric> calculate(Package aPackage) {
+            NumericValue total = doCalculate(aPackage);
+            return ImmutableSet.of(Metric.of("TLOC", "Total Lines of Code (TLOC) - The total number of lines of code, ignoring comments, whitespace, and formatting differences (package)", total));
+        }
+    }
+
+    public static class ProjectCalculator implements Calculator<Project> {
+
+        @Override
+        public Set<Metric> calculate(Project aProject) {
+            NumericValue total = NumericValue.ZERO;
+            for (Package aPackage : aProject.getPackages()) {
+                total = PackageCalculator.doCalculate(aPackage).plus(total);
+            }
+            return ImmutableSet.of(Metric.of("TLOC", "Total Lines of Code (TLOC) - The total number of lines of code, ignoring comments, whitespace, and formatting differences (project)", total));
+        }
+    }
+
+    public static class TypeCalculator implements Calculator<Type> {
+
+        static NumericValue doCalculate(Type type) {
+            Stack<Node> nodeStack = new Stack<Node>();
+            nodeStack.add(type.getSource());
+
+            return performCalculation(nodeStack);
+        }
+
+        @Override
+        public Set<Metric> calculate(Type type) {
+            NumericValue total = doCalculate(type);
+            return ImmutableSet.of(Metric.of("TLOC", "Total Lines of Code (TLOC) - The total number of lines of code, ignoring comments, whitespace, and formatting differences (class)", total));
         }
     }
 

@@ -41,10 +41,10 @@ public class ClassInheritanceCalculator implements Calculator<Type> {
 
 
         return ImmutableSet.of(
-                Metric.of("NOPa", "Number of Parents", parents.size()),
-                Metric.of("NOCh", "Number of Children", children.size()),
-                Metric.of("NOD", "Number of Descendants", descendants.size()),
-                Metric.of("NOA", "Number of Ancestors", ancestors.size())
+                Metric.of("NOPa", "Number of Parents (NOPa) - Number of classes that this class directly extends (class)", parents.size()),
+                Metric.of("NOCh", "Number of Children (NOCh) - Number of classes that directly extend this class (class)", children.size()),
+                Metric.of("NOD", "Number of Descendants (NOD) - Total number of classes that have this class as an ancestor (class)", descendants.size()),
+                Metric.of("NOA", "Number of Ancestors (NOA) - Total number of classes that have this class as a descendant (class)", ancestors.size())
         );
     }
 }

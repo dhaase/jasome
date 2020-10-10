@@ -18,8 +18,8 @@ import java.util.Set;
 public class NestedBlockDepthCalculator implements Calculator<Method> {
     @Override
     public Set<Metric> calculate(Method method) {
-        List<BlockStmt> blocks = method.getSource().getNodesByType(BlockStmt.class);
-        List<SwitchEntryStmt> switchEntries = method.getSource().getNodesByType(SwitchEntryStmt.class);
+        List<BlockStmt> blocks = method.getSource().findAll(BlockStmt.class);
+        List<SwitchEntryStmt> switchEntries = method.getSource().findAll(SwitchEntryStmt.class);
 
         List<Node> allNestedBlocks = new ArrayList<>();
         allNestedBlocks.addAll(blocks);

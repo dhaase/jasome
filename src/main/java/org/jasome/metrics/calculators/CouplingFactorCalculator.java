@@ -21,12 +21,12 @@ public class CouplingFactorCalculator implements Calculator<Type> {
         NumericValue totalPossibleRelationships = totalClasses.minus(NumericValue.ONE).times(NumericValue.of(2)); //Can have a server or client relationship with every class other than self
 
         ImmutableSet.Builder<Metric> metricBuilder = ImmutableSet.<Metric>builder()
-                .add(Metric.of("NODa", "Number of Dependants", NumericValue.of(serverRelationships.size())))
-                .add(Metric.of("NODe", "Number of Dependencies", NumericValue.of(clientRelationships.size())))
+                .add(Metric.of("NODa", "Number of Dependants (NODa) - Total number of classes that depend on this class (class)", NumericValue.of(serverRelationships.size())))
+                .add(Metric.of("NODe", "Number of Dependencies (NODe) - Total number of classes that a class depends on (same as NOL) (class)", NumericValue.of(clientRelationships.size())))
                 ;
 
         if(totalPossibleRelationships.isGreaterThan(NumericValue.ZERO)) {
-            metricBuilder.add(Metric.of("CF", "Coupling Factor", NumericValue.of(clientRelationships.size()+serverRelationships.size()).divide(totalPossibleRelationships)));
+            metricBuilder.add(Metric.of("CF", "Coupling Factor; CF is [0,1] with 1 meaning highest coupling", NumericValue.of(clientRelationships.size()+serverRelationships.size()).divide(totalPossibleRelationships)));
         }
 
 

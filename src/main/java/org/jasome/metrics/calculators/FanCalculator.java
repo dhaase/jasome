@@ -46,12 +46,12 @@ public class FanCalculator implements Calculator<Method> {
         NumericValue systemComplexity = dataComplexity.plus(structuralComplexity.divide(NumericValue.ONE));
 
         return ImmutableSet.of(
-                Metric.of("Fout", "Fan-out", fanOut),
-                Metric.of("Fin", "Fan-in", fanIn),
-                Metric.of("Si", "Structural Complexity", structuralComplexity),
-                Metric.of("IOVars", "Input/Output Variables", iovars),
-                Metric.of("Di", "Data Complexity", dataComplexity),
-                Metric.of("Ci", "System Complexity", systemComplexity)
+                Metric.of("Fout", "Fan-out (Fout) - The number of methods immediately subordinate to a method (method)", fanOut),
+                Metric.of("Fin", " Fan-in (Fin) - The number of methods that invoke a method (method)", fanIn),
+                Metric.of("Si", "Structural Complexity (Si) - Fout^2 (method)", structuralComplexity),
+                Metric.of("IOVars", "Input/Output Variables (IOVars) - NOP + 1 (0 if void return type) (method)", iovars),
+                Metric.of("Di", "Data Complexity (Di) - (IOVars)/(Fout+1) (method)", dataComplexity),
+                Metric.of("Ci", "System Complexity (Ci) - Si + Di (method)", systemComplexity)
         );
 
 

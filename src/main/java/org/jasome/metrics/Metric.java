@@ -49,13 +49,12 @@ public class Metric {
         if (!(o instanceof Metric)) return false;
         Metric that = (Metric) o;
         return Objects.equal(name, that.name) &&
-                Objects.equal(description, that.description) &&
-                Objects.equal(value, that.value);
+                Objects.equal(value.toString(), that.value.toString());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(name, description, value);
+        return Objects.hashCode(name, value);
     }
 
     public String getFormattedValue() {

@@ -3,7 +3,12 @@ package org.jasome.input;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.*;
+import org.apache.commons.io.filefilter.CanReadFileFilter;
+import org.apache.commons.io.filefilter.FileFilterUtils;
+import org.apache.commons.io.filefilter.HiddenFileFilter;
+import org.apache.commons.io.filefilter.IOFileFilter;
+import org.apache.commons.io.filefilter.SuffixFileFilter;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +54,6 @@ public class FileScanner extends Scanner {
                 }).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
 
         Project project = doScan(sourceCodeWithAttributes, scanDir.getAbsolutePath());
-
         project.addAttribute("sourceDir", scanDir.getAbsolutePath());
 
         return project;
